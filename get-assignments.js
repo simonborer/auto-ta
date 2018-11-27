@@ -22,9 +22,14 @@ dirCont.forEach(folder => {
 
     // Create an object for each assignment
     const fold = fs.readdirSync('assignments/' + folder);
+    const logIndex = fold.indexOf('logs');
+    if (logIndex > -1) {
+      fold.splice(logIndex, 1);
+    }
     const assignmentObject = Object.create(null);
     assignmentObject["assignment"] = folder;
     assignmentObject["submissions"] = [];
+
 
     // For each file in the assignment subfolder
     fold.forEach(file => {

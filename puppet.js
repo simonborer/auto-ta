@@ -1,154 +1,212 @@
 const puppeteer = require('puppeteer'),
     chalk = require('chalk'),
-    fs = require('fs-extra');
+    chalkAnimation = require('chalk-animation'),
+    fs = require('fs-extra'),
+    h2p = require('html2plaintext'),
+    StreamZip = require('node-stream-zip');
+
+const walking = chalk.bold.cyan.bgMagenta,
+    error = chalk.bold.red;
 
 async function puppet(username, password, courseId, cvid) {
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
+console.log(walking('Launching'));
+const browser = await puppeteer.launch();
+const page = await browser.newPage();
 
-    const USERNAME_SELECTOR = '#username',
-        PASSWORD_SELECTOR = '#password',
-        BUTTON_SELECTOR = '#fm1 > section.row > input.btn-submit';
+const USERNAME_SELECTOR = '#username',
+    PASSWORD_SELECTOR = '#password',
+    BUTTON_SELECTOR = '#fm1 > section.row > input.btn-submit';
 
-    console.log(chalk.magenta("starting"));
+console.log(walking('Logging in'));
 
-    await page.goto('https://login.humber.ca/cas/login');
+await page.goto('https://login.humber.ca/cas/login');
 
-    console.log(chalk.magenta("login page"));
+console.log(walking('Submitting login info'));
 
-    await page.click(USERNAME_SELECTOR);
-    await page.keyboard.type(username);
+await page.click(USERNAME_SELECTOR);
+await page.keyboard.type(username);
 
-    await page.click(PASSWORD_SELECTOR);
-    await page.keyboard.type(password);
+await page.click(PASSWORD_SELECTOR);
+await page.keyboard.type(password);
 
-    await page.click(BUTTON_SELECTOR);
+await page.click(BUTTON_SELECTOR);
 
-    console.log(chalk.magenta("login submitted, waiting for navigation"));
+console.log(walking('Login submitted'));
+
+let str = 'This is where it usually goes wrong';
+const rainbow = chalkAnimation.rainbow(str);
+
+setInterval(() => {
+    rainbow.replace(str += '.');
+}, 1000);
+
+try {
     await page.waitForNavigation();
+} catch (error) {
+    chalkAnimation.neon(err);
+}
 
-    console.log(chalk.magenta("redirect successful"));
-    await page.goto('https://learn.humber.ca/webapps/portal/execute/tabs/tabAction?tab_tab_group_id=_1_1');
-    await page.goto('https://learn.humber.ca/webapps/gradebook/do/instructor/viewNeedsGrading?sortDir=ASCENDING&sortCol=attemptDate&course_id=' + courseId + '&editPaging=true&numResults=200');
-    await page.setViewport({ width: 9999, height: 9999 });
-    console.log('navigated to "Needs grading"');
-    await page.waitForSelector('#listContainer_databody');
-    console.log('listContainer loaded');
-    const asnLinks = await page.evaluate(() => {
-        const links = Array.from(document.querySelectorAll('#listContainer_databody > tr > th > a'));
-        return links.map(link => {
-            const linkObj = Object.create(null);
-            linkObj.script = link.getAttribute('onclick').replace("javascript:", "");
-            linkObj.assn = link.parentElement.previousElementSibling.querySelectorAll('.table-data-cell-value')[0].textContent.trim();
-            return linkObj;
-        });
-    });
-    for (const link of asnLinks) {
-        console.log("executing " + link.script);
-        await page.evaluate(link.script);
-        await page.waitForNavigation({ timeout: 10000 });
-        const downloadLinks = await page.evaluate(() => {
-            const dlLinks = Array.from(document.querySelectorAll('.dwnldBtn'));
-            return dlLinks.map(dlLink => dlLink.getAttribute('href'));
-        });
+console.log(walking('Redirect successful'));
 
-// TODO name file for student
-// txt => sql
-// 		remove html
+await page.goto('https://learn.humber.ca/webapps/portal/execute/tabs/tabAction?tab_tab_group_id=_1_1');
 
-        async function mkLinkDir(directory) {
-            try {
-                await fs.ensureDir(directory);
-                console.log('success!');
-            } catch (err) {
-                console.error(err);
-            }
-        }
+console.log(walking('Navigating to grading page'));
 
-        mkLinkDir('./assignments/' + link.assn);
+await page.goto('https://learn.humber.ca/webapps/gradebook/do/instructor/viewNeedsGrading?sortDir=ASCENDING&sortCol=attemptDate&course_id=' + courseId + '&editPaging=true&numResults=200');
 
-        if (downloadLinks.length) {
-            for (const dlLink of downloadLinks) {
-                console.log(dlLink);
-                await page._client.send('Page.setDownloadBehavior', {
-                    behavior: 'allow',
-                    downloadPath: './assignments/' + link.assn
-                });
-                await page.click('a[href="' + dlLink + '"]');
-            }
-        } else {
-            const content = await page.evaluate(el => el.innerHTML, await page.$('#previewerInner'));
-            fs.writeFile('./assignments/' + link.assn + '/message.txt', content, (err) => {
-                if (err) throw err;
-                console.log('The file has been saved!');
-            });
-        }
-        await page.goto('https://learn.humber.ca/webapps/gradebook/do/instructor/viewNeedsGrading?sortDir=ASCENDING&sortCol=attemptDate&course_id=' + courseId + '&editPaging=true&numResults=200');
+console.log(walking('Setting viewport'));
 
+await page.setViewport({ width: 9999, height: 9999 });
+
+console.log(walking('Waiting for page to fully load'));
+
+await page.waitForSelector('#listContainer_databody');
+
+const asnLinks = await page.evaluate(() => {
+    //     const links = Array.from(document.querySelectorAll('#listContainer_databody > tr > th > a'));
+    //     return links.map(link => {
+    //         const linkObj = Object.create(null);
+    //         linkObj.script = link.getAttribute('onclick').replace("javascript:", "");
+    //         linkObj.assn = link.parentElement.previousElementSibling.querySelectorAll('.table-data-cell-value')[0].textContent.trim();
+    //         linkObj.student = link.textContent.trim().replace(/\s/g, "-").toLowerCase();
+    //         return linkObj;
+    //     });
+});
+
+async function mkLinkDir(directory) {
+    try {
+        await fs.ensureDir(directory);
+    } catch (err) {
+        console.log(error(err));
     }
+}
 
+console.log(walking('Making log folder'));
 
+mkLinkDir('./assignments/logs');
 
+console.log(walking('Making log file'));
 
+const logFile = fs.createWriteStream('./assignments/logs/log.txt');
 
+for (const link of asnLinks) {
 
+    //     console.log(walking('Making ' + link.assn + ' directory'));
 
-    //     console.log("loading " + courseId + " with cvid " + cvid);
-    //     await page.goto('https://learn.humber.ca/webapps/gradebook/do/instructor/enterGradeCenter?course_id=' + courseId + '&cvid=' + cvid, { waitUntil: 'networkidle0' });
+    //     mkLinkDir('./assignments/' + link.assn);
 
-    //     console.log("waiting for table...".yellow);
-    //     await page.screenshot({ path: 'screenshots/humber1.png' });
-    //     await page.waitForSelector('#table1');
-    //     console.log("table loaded, waiting for links".yellow);
-    //     await page.waitForSelector('#table1 > tbody > tr > td > div.gbDivWrapper > span.contextMenuContainer > a');
+    //     console.log(walking("Executing " + link.script));
 
-    //     const asnLinks = await page.evaluate(() => {
-    //         const links = Array.from(document.querySelectorAll('#table1 > tbody > tr > td:not(:first-of-type) > div.gbDivWrapper > span.contextMenuContainer > a'))
-    //         return links.map(link => link.id);
+    //     await page.evaluate(link.script);
+
+    //     console.log(walking('Navigating to submission page'));
+
+    //     await page.waitForNavigation();
+
+    //     const downloadLinks = await page.evaluate(() => {
+    //         const dlLinks = Array.from(document.querySelectorAll('.dwnldBtn'));
+    //         return dlLinks.map(dlLink => dlLink.getAttribute('href'));
     //     });
 
-    //     console.log(asnLinks);
+    //     // 		renaming
+    //     // 		unzip
 
-    // process.on('unhandledRejection', (reason, p) => {
-    //     console.error('Unhandled Rejection at: Promise', p, 'reason:', reason);
-    //     browser.close();
-    // });
+    //     if (downloadLinks.length) {
 
+    //         console.log(walking('Downloading ' + downloadLinks.length + ' submission files'));
 
-    // 	//async function clickAsnLinks() {
-    // 		for (const assn of asnLinks) {
-    // 			console.log("waiting for " + assn);
-    // 			const assnId = "#" + assn;
-    // 			const assnIdImg = assnId + " > img";
-    // 			await page.$eval(assnId, e => e.setAttribute("style", "display:block"));
-    // 			await page.waitForSelector(assnIdImg, {visible: true});
-    // 			console.log("clicking " + assnIdImg);
-    // 			await page.click(assnIdImg);
-    // 			const assnDivId = "#" + assn.replace("link", "div");
-    // 			console.log("clicked " + assn + ", waiting for " + assnDivId);
-    // 			await page.screenshot({ path: 'screenshots/humber-clicked.png' });
-    // 			await page.waitForSelector(assnDivId);
-    // 		}
-    //}
+    //         for (const dlLink of downloadLinks) {
 
-    // clickAsnLinks();
+    //             console.log(walking('Logging ' + link.student + ' => ' + dlLink));
 
-    // const linkHandlers = await page.$x("//a[contains(text(), 'learn.humber.ca')]");
+    //             logFile.write(link.student + ' => ' + dlLink + '\n\n');
 
-    // if (linkHandlers.length > 0) {
-    // 	console.log("link found".green);
-    //     await linkHandlers[0].click();
-    //     await page.waitForNavigation();
-    //     await page.screenshot({ path: 'screenshots/humber.png' });
-    // } else {
-    //     throw new Error("Link not found");
-    // }
-    // await page.click('a[href="https://learn.humber.ca"]');
-    // await console.log("navigated");
-    // await page.goto('https://learn.humber.ca/webapps/gradebook/do/instructor/enterGradeCenter?course_id=_114784_1&cvid=981295');
+    //             console.log(walking('Waiting for file download'));
 
+    //             await page._client.send('Page.setDownloadBehavior', {
+    //                 behavior: 'allow',
+    //                 downloadPath: './assignments/' + link.assn
+    //             });
 
-    await browser.close();
+    //             await page.click('a[href="' + dlLink + '"]');
+
+    //             console.log(walking('Downloaded ' + dlLink));
+    //         }
+    //     } else {
+
+    //         console.log(walking('Scraping submission text'));
+
+    //         const content = await page.evaluate(el => el.innerHTML, await page.$('#previewerInner'));
+
+    //         console.log(walking('Parsing text from raw markup'));
+
+    //         const parsedContent = h2p(content);
+
+    //         console.log(walking('Writing submission text to ./assignments/' + link.assn + '/' + link.student + '.sql'));
+    //         fs.writeFile('./assignments/' + link.assn + '/' + link.student + '.sql', parsedContent, (err) => {
+    //             if (err) throw err;
+    //         });
+    //     }
+
+    //     console.log(walking('Returning to grading page'));
+    //     await page.goto('https://learn.humber.ca/webapps/gradebook/do/instructor/viewNeedsGrading?sortDir=ASCENDING&sortCol=attemptDate&course_id=' + courseId + '&editPaging=true&numResults=200');
+
+}
+
+console.log(walking('Closing log file'));
+
+logFile.end();
+
+console.log(walking('Closing browser'));
+
+await browser.close();
+
+console.log(walking('Listing subdirectories in assignments'));
+
+    const dirCont = fs.readdirSync('assignments');
+
+    dirCont.forEach(folder => {
+
+        // Create an object for each assignment
+        const subfolder = fs.readdirSync('assignments/' + folder);
+
+        subfolder.forEach(file => {
+        	console.log(file);
+            const fileExt = file.substring(file.length - 4),
+            	filePath = 'assignments/' + folder + '/';
+            switch (fileExt) {
+                case '.txt':
+                    const newName = file.replace('.txt', '.sql');
+                    console.log(walking('Renaming ' + file + ' to ' + newName));
+                    try {
+	                    fs.rename(filePath + file, filePath + newName);                	
+                    } catch (error) {
+                    	console.log(error);
+                    }
+                    break;
+                case '.zip':
+                    console.log(walking('Unzipping ' + file));
+
+                    const zip = new StreamZip({
+                        file: filePath + file,
+                        storeEntries: true
+                    });
+
+                    try {
+                        zip.on('ready', () => {
+                            zip.extract(null, './' + filePath, (err, count) => {
+                                console.log(err ? 'Extract error' : `Extracted ${count} entries`);
+                                zip.close();
+                            });
+                        });
+                    } catch (error) {
+                        chalkAnimation.neon(error);
+                    }
+                    break;
+            }
+        })
+
+    });
 }
 
 module.exports = puppet;

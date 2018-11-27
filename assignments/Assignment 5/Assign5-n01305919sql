@@ -1,0 +1,62 @@
+--Assignment-5 
+--Parampreet Singh Grewal 
+--N01305919
+
+--1 Parampreet N01305919
+SET SERVEROUTPUT ON;
+DECLARE balance_left INTEGER;
+BEGIN
+SELECT   COUNT(*) INTO  balance_left
+FROM INVOICES
+WHERE ((invoice_total -payment_total - credit_total)  >= 5000);
+dbms_output.put_line( balance_left||' invoices exceed $5,000.');
+END;
+
+
+--2 Parampreet N01305919
+SET SERVEROUTPUT ON;
+DECLARE
+total_sum float;
+balance_left integer;
+BEGIN
+SELECT COUNT (*) INTO balance_left 
+FROM invoices
+WHERE (invoice_total-payment_total-credit_total)<>0;
+dbms_output.put_line ('Number of unpaid invoices is '||balance_left||'.');
+SELECT SUM(invoice_total-payment_total-credit_total) INTO total_sum 
+FROM invoices
+WHERE (invoice_total-payment_total-credit_total) <> 0;
+IF(total_sum > 50000) THEN
+dbms_output.put_line ('Total balance due is $'|| total_sum||'.');
+ELSE
+dbms_output.put_line ('Total balance due is less than $50,000.');
+END IF;
+END;
+
+
+--3 Parampreet N01305919
+SET SERVEROUTPUT ON;
+DECLARE 
+CURSOR cursor_first IS 
+SELECT  invoice_number,vendor_name, (invoice_total-payment_total-credit_total) AS balance_left
+FROM invoices invcs INNER JOIN vendors vndrs 
+ON invcs.vendor_id=vndrs.vendor_id
+WHERE invoice_total-payment_total-credit_total > 5000
+ORDER BY invoice_total-payment_total-credit_total DESC; 
+BEGIN
+FOR cursor_second IN cursor_first
+LOOP
+dbms_output.put_line(cursor_second.balance_left  || cursor_second.invoice_number  ||  cursor_second.vendor_name );
+END LOOP;
+END;
+
+
+--4 Parampreet N01305919
+--5 Parampreet SET SERVEROUTPUT ON;
+DECLARE balance_left INTEGER;
+BEGIN
+SELECT   COUNT(*) INTO  balance_left
+FROM INVOICES
+WHERE ((invoice_total -payment_total - credit_total)  >= 5000);
+dbms_output.put_line(' Invoice amounts greater than or equal to $2,000.');
+END;
