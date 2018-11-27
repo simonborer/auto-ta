@@ -1,3 +1,4 @@
+// Returns:
 // [{
 //     assignment: {string},
 //     submissions: [{
@@ -8,8 +9,9 @@
 //     }]
 // }]
 
-const fs = require('fs');
-const dirCont = fs.readdirSync('assignments');
+const fs = require('fs'),
+    dirCont = fs.readdirSync('assignments');
+    
 const getQuestions = require('./get-questions')
 
 // all the assignments

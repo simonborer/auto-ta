@@ -1,0 +1,70 @@
+body {
+	padding: 3rem 0;
+}
+h1, h2 {
+    font-weight: bold;
+}
+.toggle__label:hover {
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.toggle__input {
+    position: absolute;
+    left: -999em;
+}
+
+.toggle__target {
+    max-height: 0;
+    overflow: hidden;
+}
+
+.toggle__input:checked+.toggle__target {
+    max-height: 99em;
+}
+
+.callout {
+    margin-bottom: 0;
+}
+
+.results-table {
+    margin-bottom: 2rem;
+}
+
+code[class*="language-"],
+pre[class*="language-"] {
+    color: #f8f8f2;
+    background: #144270;
+    text-shadow: 0 1px rgba(0, 0, 0, 0.3);
+    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+
+    line-height: 1.5;
+
+    -moz-tab-size: 4;
+    -o-tab-size: 4;
+    tab-size: 4;
+
+    -webkit-hyphens: none;
+    -moz-hyphens: none;
+    -ms-hyphens: none;
+    hyphens: none;
+}
+
+.grey {
+    color: grey;
+}
+
+.red {
+    color: red;
+}
+
+.green {
+    color: green;
+}
+
+.callout--response {
+    margin: 2rem 0;
+}
+.diff-header {
+    margin: 2rem 0;
+}

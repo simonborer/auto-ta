@@ -1,5 +1,5 @@
-var oracledb = require('oracledb');
-var config = require('./config');
+const oracledb = require('oracledb'),
+  config = require('./config');
 
 const oracle = function(query){
   return new Promise(resolve => {

@@ -10,4 +10,9 @@ util.mkdirSync = function (dirPath) {
   }
 }
 
+util.getPercent = function(num1, num2){
+	const percent = Math.round(num1 / num2 * 100);
+	return percent;
+}
+
 module.exports = util;
