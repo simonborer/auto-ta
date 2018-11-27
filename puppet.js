@@ -53,15 +53,18 @@ async function puppet(username, password, courseId, cvid) {
         });
 
 // TODO name file for student
+// txt => sql
 // 		remove html
+
         async function mkLinkDir(directory) {
             try {
-                await fs.ensureDir(directory)
-                console.log('success!')
+                await fs.ensureDir(directory);
+                console.log('success!');
             } catch (err) {
-                console.error(err)
+                console.error(err);
             }
         }
+
         mkLinkDir('./assignments/' + link.assn);
 
         if (downloadLinks.length) {
@@ -75,7 +78,7 @@ async function puppet(username, password, courseId, cvid) {
             }
         } else {
             const content = await page.evaluate(el => el.innerHTML, await page.$('#previewerInner'));
-            fs.writeFile('message.txt', content, (err) => {
+            fs.writeFile('./assignments/' + link.assn + '/message.txt', content, (err) => {
                 if (err) throw err;
                 console.log('The file has been saved!');
             });
