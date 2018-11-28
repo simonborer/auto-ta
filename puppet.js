@@ -1,3 +1,10 @@
+// TODO - option for only dl'ing new files
+// 		-- tricky b/c of renaming, would have
+//			to rely on logfile
+// 		- browser closes before rename ends
+// 		-- shouldn't be a sync issue tho??
+// 		- put reason for no rename in log file for debugging
+
 const puppeteer = require('puppeteer'),
     chalk = require('chalk'),
     chalkAnimation = require('chalk-animation'),
@@ -23,178 +30,192 @@ const walking = chalk.bold.cyan.bgMagenta,
     error = chalk.bold.red;
 
 async function puppet(username, password, courseId, cvid) {
-    // console.log(walking('Launching'));
-    // const browser = await puppeteer.launch();
-    // const page = await browser.newPage();
+    console.log(walking('Launching'));
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
 
-    // const USERNAME_SELECTOR = '#username',
-    //     PASSWORD_SELECTOR = '#password',
-    //     BUTTON_SELECTOR = '#fm1 > section.row > input.btn-submit';
+    const USERNAME_SELECTOR = '#username',
+        PASSWORD_SELECTOR = '#password',
+        BUTTON_SELECTOR = '#fm1 > section.row > input.btn-submit';
 
-    // console.log(walking('Logging in'));
+    console.log(walking('Logging in'));
 
-    // await page.goto('https://login.humber.ca/cas/login');
+    await page.goto('https://login.humber.ca/cas/login');
 
-    // console.log(walking('Submitting login info'));
+    console.log(walking('Submitting login info'));
 
-    // await page.click(USERNAME_SELECTOR);
-    // await page.keyboard.type(username);
+    await page.click(USERNAME_SELECTOR);
+    await page.keyboard.type(username);
 
-    // await page.click(PASSWORD_SELECTOR);
-    // await page.keyboard.type(password);
+    await page.click(PASSWORD_SELECTOR);
+    await page.keyboard.type(password);
 
-    // await page.click(BUTTON_SELECTOR);
+    await page.click(BUTTON_SELECTOR);
 
-    // console.log(walking('Login submitted'));
+    console.log(walking('Login submitted'));
 
-    // let str = 'This is where it usually goes wrong';
-    // const rainbow = chalkAnimation.rainbow(str);
+    let str = 'This is where it usually goes wrong';
+    const rainbow = chalkAnimation.rainbow(str);
 
-    // setInterval(() => {
-    //     rainbow.replace(str += '.');
-    // }, 1000);
+    setInterval(() => {
+        rainbow.replace(str += '.');
+    }, 1000);
 
-    // try {
-    //     await page.waitForNavigation();
-    // } catch (error) {
-    //     chalkAnimation.neon(err);
-    // }
+    try {
+        await page.waitForNavigation();
+    } catch (error) {
+        chalkAnimation.neon(err);
+    }
 
-    // console.log(walking('Redirect successful'));
+    console.log(walking('Redirect successful'));
 
-    // await page.goto('https://learn.humber.ca/webapps/portal/execute/tabs/tabAction?tab_tab_group_id=_1_1');
+    await page.goto('https://learn.humber.ca/webapps/portal/execute/tabs/tabAction?tab_tab_group_id=_1_1');
 
-    // console.log(walking('Navigating to grading page'));
+    console.log(walking('Navigating to grading page'));
 
-    // await page.goto('https://learn.humber.ca/webapps/gradebook/do/instructor/viewNeedsGrading?sortDir=ASCENDING&sortCol=attemptDate&course_id=' + courseId + '&editPaging=true&numResults=200');
+    await page.goto('https://learn.humber.ca/webapps/gradebook/do/instructor/viewNeedsGrading?sortDir=ASCENDING&sortCol=attemptDate&course_id=' + courseId + '&editPaging=true&numResults=200');
 
-    // console.log(walking('Setting viewport'));
+    console.log(walking('Setting viewport'));
 
-    // await page.setViewport({ width: 9999, height: 9999 });
+    await page.setViewport({ width: 9999, height: 9999 });
 
-    // console.log(walking('Waiting for page to fully load'));
+    console.log(walking('Waiting for page to fully load'));
 
-    // await page.waitForSelector('#listContainer_databody');
+    await page.waitForSelector('#listContainer_databody');
 
-    // const asnLinks = await page.evaluate(() => {
-    //     const links = Array.from(document.querySelectorAll('#listContainer_databody > tr > th > a'));
-    //     return links.map(link => {
-    //         const linkObj = Object.create(null);
-    //         linkObj.script = link.getAttribute('onclick').replace("javascript:", "");
-    //         linkObj.assn = link.parentElement.previousElementSibling.querySelectorAll('.table-data-cell-value')[0].textContent.trim();
-    //         linkObj.student = link.textContent.trim().replace(/\s/g, "-").toLowerCase();
-    //         return linkObj;
-    //     });
-    // });
+    const asnLinks = await page.evaluate(() => {
+        const links = Array.from(document.querySelectorAll('#listContainer_databody > tr > th > a'));
+        return links.map(link => {
+            const linkObj = Object.create(null);
+            linkObj.script = link.getAttribute('onclick').replace("javascript:", "");
+            linkObj.assn = link.parentElement.previousElementSibling.querySelectorAll('.table-data-cell-value')[0].textContent.trim();
+            linkObj.student = link.textContent.trim().replace(/\s/g, "-").toLowerCase();
+            return linkObj;
+        });
+    });
 
-    // async function mkLinkDir(directory) {
-    //     try {
-    //         await fs.ensureDir(directory);
-    //     } catch (err) {
-    //         console.log(error(err));
-    //     }
-    // }
+    async function mkLinkDir(directory) {
+        try {
+            await fs.ensureDir(directory);
+        } catch (err) {
+            console.log(error(err));
+        }
+    }
 
-    // console.log(walking('Making log folder'));
+    // const subTextAttr = new Map();
 
-    // mkLinkDir('./assignments/logs');
+    console.log(walking('Making log folder'));
 
-    // console.log(walking('Making log file'));
+    mkLinkDir('./assignments/logs');
 
-    // const logFile = fs.createWriteStream('./assignments/logs/log.txt');
+    console.log(walking('Making log file'));
 
-    // for (const link of asnLinks) {
+    const logFile = fs.createWriteStream('./assignments/logs/log.txt');
 
-    //     console.log(walking('Making ' + link.assn + ' directory'));
+    for (const link of asnLinks) {
 
-    //     mkLinkDir('./assignments/' + link.assn);
+        console.log(walking('Making ' + link.assn + ' directory'));
 
-    //     console.log(walking("Executing " + link.script));
+        mkLinkDir('./assignments/' + link.assn);
 
-    //     await page.evaluate(link.script);
+        console.log(walking("Executing " + link.script));
 
-    //     console.log(walking('Navigating to submission page'));
+        await page.evaluate(link.script);
 
-    //     await page.waitForNavigation();
+        console.log(walking('Navigating to submission page'));
 
-    //     const downloadLinks = await page.evaluate(() => {
-    //         const dlLinks = Array.from(document.querySelectorAll('.dwnldBtn'));
-    //         return dlLinks.map(dlLink => dlLink.getAttribute('href'));
-    //     });
+        await page.waitForNavigation();
 
-    //     if (downloadLinks.length) {
+        const downloadLinks = await page.evaluate(() => {
+            const dlLinks = Array.from(document.querySelectorAll('.dwnldBtn'));
+            return dlLinks.map(dlLink => dlLink.getAttribute('href'));
+        });
 
-    //         console.log(walking('Downloading ' + downloadLinks.length + ' submission files'));
+        if (downloadLinks.length) {
 
-    //         for (const dlLink of downloadLinks) {
+            console.log(walking('Downloading ' + downloadLinks.length + ' submission files'));
 
-    //             console.log(walking('Logging ' + link.student + ' => ' + dlLink));
+            for (const dlLink of downloadLinks) {
 
-    //             logFile.write(link.student + ' => ' + dlLink + '\n\n');
+                console.log(walking('Logging ' + link.student + ' => ' + dlLink));
 
-    //             console.log(walking('Waiting for file download'));
+                const dlLinkFileName = dlLink.split('&')[dlLink.split('&').length - 1].replace('fileName=', '');
+                // subTextAttr.set(link.student, dlLinkFileName);
 
-    //             await page._client.send('Page.setDownloadBehavior', {
-    //                 behavior: 'allow',
-    //                 downloadPath: './assignments/' + link.assn
-    //             });
+                console.log(walking('Waiting for file download'));
 
-    //             await page.click('a[href="' + dlLink + '"]');
+                await page._client.send('Page.setDownloadBehavior', {
+                    behavior: 'allow',
+                    downloadPath: './assignments/' + link.assn
+                });
 
-    //             console.log(walking('Downloaded ' + dlLink));
-    //         }
-    //     } else {
+                await page.click('a[href="' + dlLink + '"]');
 
-    //         console.log(walking('Scraping submission text'));
+                console.log(walking('Downloading ' + dlLink));
 
-    //         const content = await page.evaluate(el => el.innerHTML, await page.$('#previewerInner'));
+                const dl = function() {
+                    if (fs.existsSync('./assignments/' + link.assn + '/' + dlLinkFileName)) {
+                        console.log(walking('Renaming ' + dlLinkFileName + ' to ' + link.student + '_' + dlLinkFileName));
+                        try {
+                            fs.rename('./assignments/' + link.assn + '/' + dlLinkFileName, './assignments/' + link.assn + '/' + link.student + '_' + dlLinkFileName);
+                        } catch (error) {
+                            console.log(error);
+                        }
+                    } else {
+                        logFile.write(link.student + ' => ' + dlLinkFileName + '\n');
+                    }
+                }
 
-    //         console.log(walking('Parsing text from raw markup'));
+                let str = 'Downloading';
+                const rainbow = chalkAnimation.rainbow(str);
 
-    //         const parsedContent = h2p(content);
+                setInterval(() => {
+                    rainbow.replace(str += '.');
+                }, 1000);
 
-    //         console.log(walking('Writing submission text to ./assignments/' + link.assn + '/' + link.student + '.sql'));
-    //         fs.writeFile('./assignments/' + link.assn + '/' + link.student + '.sql', parsedContent, (err) => {
-    //             if (err) throw err;
-    //         });
-    //     }
+                setTimeout(dl, 3000);
 
-    //     console.log(walking('Returning to grading page'));
-    //     await page.goto('https://learn.humber.ca/webapps/gradebook/do/instructor/viewNeedsGrading?sortDir=ASCENDING&sortCol=attemptDate&course_id=' + courseId + '&editPaging=true&numResults=200');
 
-    // }
 
-    // console.log(walking('Closing log file'));
+            }
+        } else {
 
-    // logFile.end();
+            console.log(walking('Scraping submission text'));
 
-    // console.log(walking('Closing browser'));
+            const content = await page.evaluate(el => el.innerHTML, await page.$('#previewerInner'));
 
-    // await browser.close();
+            console.log(walking('Parsing text from raw markup'));
+
+            const parsedContent = h2p(content);
+
+            console.log(walking('Writing submission text to ./assignments/' + link.assn + '/' + link.student + '.sql'));
+            fs.writeFile('./assignments/' + link.assn + '/' + link.student + '.sql', parsedContent, (err) => {
+                if (err) throw err;
+            });
+        }
+
+        console.log(walking('Returning to grading page'));
+        await page.goto('https://learn.humber.ca/webapps/gradebook/do/instructor/viewNeedsGrading?sortDir=ASCENDING&sortCol=attemptDate&course_id=' + courseId + '&editPaging=true&numResults=200');
+
+    }
+
+    console.log(walking('Closing log file'));
+
+    logFile.end();
 
     console.log(walking('Listing subdirectories in assignments'));
 
-    const dirCont = fs.readdirSync('assignments');
+    const dirCont = fs.readdirSync('assignments').filter(sbfolder => fs.statSync('./assignments/' + sbfolder).isDirectory());;
 
     dirCont.forEach(folder => {
 
         // Create an object for each assignment
-        const subfolder = fs.readdirSync('assignments/' + folder);
+        const subfolder = fs.readdirSync('./assignments/' + folder).filter(sbfolder => fs.statSync('./assignments/' + folder + '/' + sbfolder).isDirectory());
 
         subfolder.forEach(file => {
-            console.log(file);
             const fileExt = file.substring(file.length - 4),
                 filePath = 'assignments/' + folder + '/';
             switch (fileExt) {
-                case '.txt':
-                    const newName = file.replace('.txt', '.sql');
-                    console.log(walking('Renaming ' + file + ' to ' + newName));
-                    try {
-                        fs.rename(filePath + file, filePath + newName);
-                    } catch (error) {
-                        console.log(error);
-                    }
-                    break;
                 case '.zip':
                     console.log(walking('Unzipping ' + file));
 
@@ -213,9 +234,23 @@ async function puppet(username, password, courseId, cvid) {
                     } catch (error) {
                         chalkAnimation.neon(error);
                     }
-
                     break;
+            }
+        });
 
+        subfolder.forEach(file => {
+            const fileExt = file.substring(file.length - 4),
+                filePath = 'assignments/' + folder + '/';
+            switch (fileExt) {
+                case '.txt':
+                    const newName = file.replace('.txt', '.sql');
+                    console.log(walking('Renaming ' + file + ' to ' + newName));
+                    try {
+                        fs.rename(filePath + file, filePath + newName);
+                    } catch (error) {
+                        console.log(error);
+                    }
+                    break;
             }
         })
 
@@ -223,61 +258,45 @@ async function puppet(username, password, courseId, cvid) {
 
     dirCont.forEach(folder => {
 
-    	const subfolder = fs.readdirSync('./assignments/' + folder).filter(sbfolder => fs.statSync('./assignments/' + folder + '/' + sbfolder).isDirectory());
+        const subfolder = fs.readdirSync('./assignments/' + folder).filter(sbfolder => fs.statSync('./assignments/' + folder + '/' + sbfolder).isDirectory());
 
-    	subfolder.forEach(innerFolders => {
-    		const kidFolders = fs.readdirSync('./assignments/' + folder + '/' + innerFolders);
-    		kidFolders.forEach(kf => {
-    			const kfFilePath = './assignments/' + folder + '/' + innerFolders + '/';
-    			if (fs.statSync(kfFilePath + kf).isDirectory()) {
-	    			getFiles(kfFilePath + kf)
-					  .then(function(value) {
-					  	value.forEach(val => {
-					  		if (val.substring(val.length - 9) = '.DS_Store') {
-					  			fs.unlink(val);
-					  			console.log(walking('Deleted .DS_Store file'))
-					  		} else {
-					  			  try {
-					  			  	const dstpath = './assignments/' + folder + val.split("/").pop();
-								    await fs.move(val, dstpath)
-								    console.log(walking('Moved ' + val.split("/").pop() + ' from ' + val + ' to ./assignments/' + folder));
-								  } catch (err) {
-								    console.error(err)
-								  }
-					  		}
-					  	})
-					  })
-					  .catch(e => console.error(e));
-					}
-    			// switch (kf) {
-    			// 	case '.DS_Store':
-    			// 		fs.unlink(kfFilePath + kf);
+        subfolder.forEach(innerFolders => {
+            const kidFolders = fs.readdirSync('./assignments/' + folder + '/' + innerFolders);
+            kidFolders.forEach(kf => {
+                const kfFilePath = './assignments/' + folder + '/' + innerFolders + '/';
+                if (fs.statSync(kfFilePath + kf).isDirectory()) {
+                    getFiles(kfFilePath + kf)
+                        .then(function(value) {
+                            value.forEach(val => {
+                                if (val.substring(val.length - 9) === '.DS_Store') {
+                                    fs.unlink(val);
+                                    console.log(walking('Deleted .DS_Store file'))
+                                } else {
+                                    try {
+                                        let valFilename = val.split("/").pop();
+                                        let dstpath = './assignments/' + folder + valFilename;
+                                        if (fs.existsSync(val)) {
+                                            valFilename = valFilename + new Date().toString().replace(/\s/g, '-');
+                                            dstpath = './assignments/' + folder + valFilename;
+                                        }
+                                        fs.moveSync(val, dstpath);
+                                        console.log(walking('Moved ' + valFilename + ' from ' + val + ' to ./assignments/' + folder));
+                                    } catch (err) {
+                                        console.error(err)
+                                    }
+                                }
+                            })
+                        })
+                        .catch(e => console.error(e));
+                }
+            });
 
-
-    			// }
-    		});
-    		
-    		// console.log(error(innerFolders))
-    		// innerFolders.forEach(innerFolder => {
-    		// 	console.log(innerFolder)
-    		// })
-    		// const filePath = 'assignments/' + folder + '/';
-		    // const kidFolder = fs.readdirSync('./' + filePath + file);
-    		// console.log(error(kidFolder));
-
-		    // kidFolder.forEach(folder => {
-		    // 	const path = filePath + folder;
-		    // 	console.log(error("is " + path + " a folder?"));
-		    //     if (fs.statSync(path).isDirectory()) {
-		    //         getFiles(filePath + '/' + folder)
-		    //             .then(files => { console.log('filepath: ' + filePath + '/' + folder + ', files ' + files) })
-		    //             .catch(e => console.error(e));
-
-		    //     }
-		    // })
-    		
-    	})
+        })
     })
+
+	console.log(walking('Closing browser'));
+
+	await browser.close();
 }
 
 module.exports = puppet;
