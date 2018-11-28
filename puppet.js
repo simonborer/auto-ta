@@ -4,6 +4,9 @@
 // 		- browser closes before rename ends
 // 		-- shouldn't be a sync issue tho??
 // 		- put reason for no rename in log file for debugging
+// 		-- deleted renamed files && unzipped .zips
+// 		- log parent folder
+// 		- wait, is unzip happening?
 
 const puppeteer = require('puppeteer'),
     chalk = require('chalk'),

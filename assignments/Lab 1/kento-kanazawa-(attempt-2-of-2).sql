@@ -14,7 +14,7 @@
 
   
 
-5. 
+-- Q5 
 
 SELECT vendor_name AS "Vendor", vendor_state AS "State", vendor_city AS "City"
  FROM vendors
@@ -22,7 +22,7 @@ SELECT vendor_name AS "Vendor", vendor_state AS "State", vendor_city AS "City"
 
   
 
-6. 
+-- Q6 
 
 SELECT invoice_id, invoice_number, invoice_total - payment_total AS "balance"
  FROM invoices
@@ -30,7 +30,7 @@ SELECT invoice_id, invoice_number, invoice_total - payment_total AS "balance"
 
   
 
-7. 
+-- Q7 
 
 SELECT vendor_id, vendor_name, vendor_contact_first_name || ' ' || vendor_contact_last_name AS "Vendor Contact Name", vendor_phone
  FROM vendors
